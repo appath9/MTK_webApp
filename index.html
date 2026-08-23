@@ -3136,6 +3136,7 @@
 <body class="relative pb-7">
 
   <div class="bg-ambient-radial"></div>
+  <audio id="bgMusic" src="bg-music.mp3" loop preload="auto"></audio>
 
   <!-- Fixed Footnote Motto Marquee -->
   <div class="motto-footnote-bar" id="motto-footnote-bar">
@@ -3163,9 +3164,15 @@
     </div>
   </div>
 
-  <div class="lang-toggle">
-    <button class="lang-btn active" onclick="toggleLanguage('en')" id="btn-en">EN</button>
-    <button class="lang-btn" onclick="toggleLanguage('mm')" id="btn-mm">ဗမာ</button>
+  <div class="fixed top-5 right-5 z-[2600] flex items-center gap-2">
+    <!-- Music Mute/Unmute Toggle Button -->
+    <button id="music-toggle-btn" onclick="toggleMusicMute()" class="bg-[#2B2930] border border-[#49454F] w-9 h-9 rounded-full flex items-center justify-center text-sm shadow-md text-[#E6E1E5] active:scale-95 transition-transform" title="Background Music" aria-label="Toggle Background Music">
+      🎵
+    </button>
+    <div class="lang-toggle !static">
+      <button class="lang-btn active" onclick="toggleLanguage('en')" id="btn-en">EN</button>
+      <button class="lang-btn" onclick="toggleLanguage('mm')" id="btn-mm">ဗမာ</button>
+    </div>
   </div>
 
   <button id="menu-trigger" onclick="toggleMenu(true)" class="fixed top-5 left-5 z-[2600] bg-[#2B2930] border border-[#49454F] p-2.5 rounded-2xl shadow-md text-[#E6E1E5]">
@@ -3400,9 +3407,59 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       setActiveMenu('home');
+      initBackgroundMusic();
       loadFortuneData();
       registerServiceWorker();
     });
+
+    
+    // Background Music Controller
+    let isMusicMuted = localStorage.getItem('music_muted') === 'true';
+
+    function initBackgroundMusic() {
+      const audio = document.getElementById('bgMusic');
+      if (!audio) return;
+      audio.volume = 0.4;
+      audio.muted = isMusicMuted;
+      updateMusicButtonUI();
+
+      // First user interaction anywhere on the screen triggers audio playback
+      const startMusic = function() {
+        const aud = document.getElementById('bgMusic');
+        if (aud && !isMusicMuted && aud.paused) {
+          aud.volume = 0.4;
+          aud.play().catch(function(error) {
+            console.log("Audio play failed:", error);
+          });
+        }
+      };
+
+      document.addEventListener('click', startMusic, { once: true });
+      document.addEventListener('touchstart', startMusic, { once: true });
+    }
+
+    function toggleMusicMute() {
+      const audio = document.getElementById('bgMusic');
+      isMusicMuted = !isMusicMuted;
+      localStorage.setItem('music_muted', isMusicMuted ? 'true' : 'false');
+      if (audio) {
+        audio.muted = isMusicMuted;
+        if (!isMusicMuted && audio.paused) {
+          audio.volume = 0.4;
+          audio.play().catch(e => console.log("Audio play error:", e));
+        }
+      }
+      updateMusicButtonUI();
+    }
+
+    function updateMusicButtonUI() {
+      const btn = document.getElementById('music-toggle-btn');
+      if (btn) {
+        btn.innerHTML = isMusicMuted ? '🔇' : '🎵';
+        btn.title = isMusicMuted ? (currentLang === 'mm' ? 'အသံဖွင့်ရန်' : 'Unmute Music') : (currentLang === 'mm' ? 'အသံပိတ်ရန်' : 'Mute Music');
+        btn.setAttribute('aria-label', btn.title);
+      }
+    }
 
     function registerServiceWorker() {
       if ('serviceWorker' in navigator) {
